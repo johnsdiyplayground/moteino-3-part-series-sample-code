@@ -56,11 +56,11 @@
 #endif
 
 // Define our pins
-#define onboardLED 		9   // Moteino onboard LED is on digital pin 9
-#define photoResistor 	A5
+#define onboardLED     9   // Moteino onboard LED is on digital pin 9
+#define photoResistor   A5
 #define photoResistorPower  A2   // The photoresistor will be hooked to pins A2 and A5
-#define externalLED 	3	// careful about which pins are already in use by Moteino's RFM69 transceiver! 
-							// For example, on Moteino you CANNOT use D2, D8, D10, D11, D12, D13!!
+#define externalLED   3 // careful about which pins are already in use by Moteino's RFM69 transceiver! 
+              // For example, on Moteino you CANNOT use D2, D8, D10, D11, D12, D13!!
 
 // Now we will define how often to flash our onboard LED 
 const long blinkLEDtime = 1000;  // 1000 is milliseconds so this means blink on/off in 1 second intervals
@@ -121,6 +121,10 @@ void setup() {
   
   sprintf(payload, "Moteino Example : %d Mhz...", FREQUENCY==RF69_433MHZ ? 433 : FREQUENCY==RF69_868MHZ ? 868 : 915);  // sprintf command creates a string to put in the buff variable
   DEBUGln(payload);  // check what we are transmitting to the gateway receiver
+  byte buffLen=strlen(payload);
+  radio.sendWithRetry(GATEWAYID, payload, buffLen);
+  // We need to send the next line to the gateway to let it know we have an external LED with condition "off" to start with
+  radio.sendWithRetry(GATEWAYID, "9900:0", 6);
   delay(5000); 
 }
 
@@ -144,17 +148,17 @@ void loop() {
           //check for a web page request from Pi Gateway to turn on or off the external LED
           //we will receive from the Pi Gateway either a message of "LOF" or LON"
           if (radio.DATA[0]=='L' && radio.DATA[1]=='O' && radio.DATA[2]=='F'){    // "LOF" is short for "LED off", keep radio messages short for best results
-            digitalWrite(externalLED, LOW);	// Tell our external LED to turn OFF
-            ledStatus = 0;					// this sets our LED status variable 
+            digitalWrite(externalLED, LOW); // Tell our external LED to turn OFF
+            ledStatus = 0;          // this sets our LED status variable 
             delay(50);
             transmitStatus(9900, ledStatus);   // now we transmit LED status back to the Pi Gateway that we turned the LED off using transmitStatus subroutine
-            									// We are passing a unique 4-digit number to identify a unique data type for our Pi Gateway, since it listens
-            									// to a lot of sensor nodes in our house.  Each sensor node gets its own set of 4-digit codes.
-            									// Any time we transmit an LED status, we will always identify it with sensor code "9900"
+                              // We are passing a unique 4-digit number to identify a unique data type for our Pi Gateway, since it listens
+                              // to a lot of sensor nodes in our house.  Each sensor node gets its own set of 4-digit codes.
+                              // Any time we transmit an LED status, we will always identify it with sensor code "9900"
           }
           else if (radio.DATA[0]=='L' && radio.DATA[1]=='O' && radio.DATA[2]=='N'){  // "LON" is short for "LED on"
-       	    digitalWrite(externalLED, HIGH);	// Tell our external LED to turn ON
-            ledStatus = 1;					// this sets our LED status variable 
+            digitalWrite(externalLED, HIGH);  // Tell our external LED to turn ON
+            ledStatus = 1;          // this sets our LED status variable 
             delay(50);
             transmitStatus(9900, ledStatus);   // now we transmit LED status back to the Pi Gateway that we turned the LED off
           }
@@ -193,3 +197,4 @@ void transmitStatus(int item, int status){
     DEBUGln(payload);
     delay(10);
 }
+
